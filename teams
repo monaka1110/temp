@@ -1,0 +1,46 @@
+# 送信するチャンネル名とメッセージ
+$channelName = "テスト"
+$message = "テストメッセージ"
+
+# Teamsを前面に表示する処理
+Add-Type @"
+using System;
+using System.Runtime.InteropServices;
+public class WinAPI {
+  [DllImport("user32.dll")] public static extern bool SetForegroundWindow(IntPtr hWnd);
+  [DllImport("user32.dll")] public static extern IntPtr FindWindow(string lpClassName, string lpWindowName);
+}
+"@
+
+$teamsHandle = [WinAPI]::FindWindow($null, "Microsoft Teams")
+if ($teamsHandle -eq [IntPtr]::Zero) {
+    # Teamsが起動していない場合、起動する
+    Start-Process -FilePath "msteams:"
+    Start-Sleep -Seconds 5
+    $teamsHandle = [WinAPI]::FindWindow($null, "Microsoft Teams")
+}
+
+[WinAPI]::SetForegroundWindow($teamsHandle)
+Start-Sleep -Seconds 2
+
+# キーボード操作のための準備
+Add-Type -AssemblyName System.Windows.Forms
+
+# 検索バーにフォーカスを移動 (Ctrl+E)
+[System.Windows.Forms.SendKeys]::SendWait("^e")
+Start-Sleep -Milliseconds 500
+
+# チャンネル名を検索
+[System.Windows.Forms.SendKeys]::SendWait($channelName)
+Start-Sleep -Seconds 2
+
+# Enterキーで該当チャンネルに移動
+[System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
+Start-Sleep -Seconds 3
+
+# メッセージ入力
+[System.Windows.Forms.SendKeys]::SendWait($message)
+Start-Sleep -Seconds 1
+
+# メッセージを送信
+[System.Windows.Forms.SendKeys]::SendWait("{ENTER}")
